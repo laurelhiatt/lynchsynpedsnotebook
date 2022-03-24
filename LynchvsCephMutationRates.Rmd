@@ -1,0 +1,61 @@
+---
+title: "LynchvsCephMutationRates"
+author: "Laurel Hiatt"
+date: "3/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Brief Overview of Data
+
+Both data sets are comprised of autosomal SNVs/autosomal callable fractions, 
+matched to sample and then with added sample source.
+
+```{r data}
+setwd('/Users/quinlan/Documents/Quinlan-PhD/lynchsynpedsnotebook')
+list.files()
+Lynchdata = read.table("LynchMutsOverCallable.csv", header = TRUE, sep = ',')
+Cephdata = read.table("CephMutsOverCallable.csv", header = TRUE, sep = ',')
+library(ggplot2)
+library(cowplot)
+
+```
+
+## Comparison Plot
+
+```{r Boxplot, echo=FALSE}
+lynch <- data.frame(group = "lynch", value = Lynchdata)
+ceph <- data.frame(group = "ceph", value = Cephdata)
+
+plotdata <- rbind(lynch,ceph)
+
+ggplot(plotdata) + geom_boxplot(aes(x = group, y = (value.mut_over_callable/2))) + xlab('') + ylab('Mutation Rates') + theme_cowplot()  + geom_jitter(aes(x = group, y = (value.mut_over_callable/2), color = value.source)) 
+```
+
+# Multiplying by Genome for Counts Approximation
+
+```{r Normalizingdata, echo=FALSE}
+Lynchdata$approximatecounts = (Lynchdata$mut_over_callable*5750003044)
+Cephdata$approximatecounts = (Cephdata$mut_over_callable*5750003044)
+# calculated from autosomal chromosome bed file, summed and * 2 for diploid
+lynch <- data.frame(group = "lynch", value = Lynchdata)
+ceph <- data.frame(group = "ceph", value = Cephdata)
+
+plotdata <- rbind(lynch,ceph)
+
+ggplot(plotdata) + geom_boxplot(aes(x = group, y = (value.approximatecounts/2))) + xlab('') + ylab('Approximate Mutations') + theme_cowplot() + geom_jitter(aes(x = group, y = (value.approximatecounts/2), color = value.source)) + geom_hline(yintercept=70.1, color = 'red', linetype = 'dashed')
+#70.1 from sasani paper, average number of mutations for haploid genome 
+
+ggplot(plotdata) + geom_boxplot(aes(x = group, y = (value.approximatecounts/2))) + xlab('') + ylab('Mutation Rates') + theme_cowplot() + theme(legend.position="none") + geom_jitter(aes(x = group, y = (value.approximatecounts/2))) 
+                                                                                                                                                                                
+ggplot(plotdata) + geom_boxplot(aes(x = group, y = (value.approximatecounts/2))) + xlab('') + ylab('Approximate Mutations') + theme_cowplot() + geom_jitter(aes(x = group, y = (value.approximatecounts/2), color = value.source)) + geom_hline(yintercept = 70, linetype= 'dotted', color = 'red')
+ 
+``` 
+
+```{r statistics}
+
+t.test(Lynchdata$mut_over_callable, Cephdata$mut_over_callable)
+```
